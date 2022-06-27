@@ -6,11 +6,13 @@ Provides an overview of media files in the current workspace.
 
 ### Previews
 The primary purpose of this extension is to provide [visual] preview of assets - i.e. images, videos & audio (album artwork if available) - in your project.
+
 ![Preview assets and Open in Explorer](/images/1.gif "Preview assets and Open in Explorer")
 
 
 ### Link drop
 With an active text file open, insert a relative link to a media file at the click of a button... Or drag 'n' drop for an absolute path.
+
 ![Insert links to your assets from the ](/images/2.gif "Insert links to your assets")
 
 ### Open in Explorer
