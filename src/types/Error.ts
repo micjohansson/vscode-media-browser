@@ -1,0 +1,1 @@
+export class NoItemError extends ReferenceError {}

@@ -1,0 +1,40 @@
+{
+  "name": "media-browser",
+  "css_prefix_text": "icon-",
+  "css_use_suffix": false,
+  "hinting": true,
+  "units_per_em": 1000,
+  "ascent": 850,
+  "glyphs": [
+    {
+      "uid": "572c9ded6a688698dc275b30ff30fefa",
+      "css": "audio",
+      "code": 59392,
+      "src": "linecons"
+    },
+    {
+      "uid": "8573943a49ed6dd8f7819070445baa46",
+      "css": "image",
+      "code": 59394,
+      "src": "linecons"
+    },
+    {
+      "uid": "f2a37db235ca1951d60d7ebc9733eb54",
+      "css": "video",
+      "code": 59395,
+      "src": "linecons"
+    },
+    {
+      "uid": "f978da58836f23373882916f05fb70b4",
+      "css": "doc",
+      "code": 59396,
+      "src": "linecons"
+    },
+    {
+      "uid": "3a230e539a4f3b904debd04c6c155034",
+      "css": "unknown",
+      "code": 59393,
+      "src": "entypo"
+    }
+  ]
+}

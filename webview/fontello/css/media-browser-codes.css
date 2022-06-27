@@ -1,0 +1,6 @@
+
+.icon-audio:before { content: '\e800'; } /* '' */
+.icon-unknown:before { content: '\e801'; } /* '' */
+.icon-image:before { content: '\e802'; } /* '' */
+.icon-video:before { content: '\e803'; } /* '' */
+.icon-doc:before { content: '\e804'; } /* '' */
