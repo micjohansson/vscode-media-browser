@@ -9,6 +9,17 @@
     "type": "git",
     "url": "https://github.com/micjohansson/vscode-media-browser"
   },
+  "icon": "images/icon.png",
+  "galleryBanner": {
+      "color": "#252525",
+      "theme": "dark"
+  },
+  "keywords": [
+    "media",
+    "assets",
+    "thumbnails",
+    "previews"
+  ],
   "engines": {
     "vscode": "^1.68.0"
   },
