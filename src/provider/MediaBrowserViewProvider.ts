@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import * as path from 'path';
 import {
 	MediaType,
@@ -7,21 +6,17 @@ import {
 	MIME_TYPE, IListOptions,
 	NoItemError,
 	MediaItem,
-	AudioItem,
-	ImageItem,
-	VideoItem,
-	MiscMediaItem,
 	SearchableMediaItem,
+	COMMON_EXCLUDE_GLOBS,
 } from '../types';
 import {
 	getUri,
 	getNonce,
-	getResourceUri,
 	useExtensionKey,
-	useMimeTypeRegex,
 	getActiveTextEditor,
 	useContentPath,
-	getMimeType,
+	getMediaItem,
+	getFiles as getFilesInWorkspace,
 } from '../utilities';
 
 export class MediaBrowserViewProvider implements vscode.WebviewViewProvider {
@@ -34,14 +29,14 @@ export class MediaBrowserViewProvider implements vscode.WebviewViewProvider {
 		omit: new Set(),
 	};
 
-	private _view?: vscode.WebviewView | undefined;
-	public get view(): vscode.WebviewView | undefined {
-		return this._view;
+	private _view: vscode.WebviewView | undefined;
+
+	private get webview(): vscode.Webview | undefined {
+		return this._view?.webview;
 	}
 
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
-		private readonly _workspaceUri: vscode.Uri | undefined
 	) { }
 
 	public resolveWebviewView(
@@ -56,8 +51,6 @@ export class MediaBrowserViewProvider implements vscode.WebviewViewProvider {
 		};
 
 		webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
-
-		this.refresh();
 
 		webviewView.webview.onDidReceiveMessage(data => {
 			switch (data.type) {
@@ -127,15 +120,17 @@ export class MediaBrowserViewProvider implements vscode.WebviewViewProvider {
 					}
 			}
 		});
+
+		this.refresh();
 	}
 
 	public refresh() {
 		this.loadMedia();
-		this.listMedia();
 	}
 
-	private loadMedia() {
-		this.media = this.getMediaFromWorkspace();
+	private async loadMedia() {
+		this.media = await this.findMedia();
+		this.listMedia();
 	}
 
 	private getMediaItem(id: string): MediaItem | undefined {
@@ -199,84 +194,29 @@ export class MediaBrowserViewProvider implements vscode.WebviewViewProvider {
 		this.listMedia();
 	}
 
-	private webviewUriConveter(uri: vscode.Uri): vscode.Uri {
-		if (!this.view) { throw new ReferenceError(`WebviewView has not been assigned`); }
-		return this.view.webview.asWebviewUri(uri);
-	}
-
-	private getMediaFromWorkspace(): MediaItem[] {
-		const workspacePath = this._workspaceUri?.fsPath;
-
-		if (!workspacePath) { return []; }
-
-		const _concat = (fsPath: string): MediaItem[] => {
-			let fileStatus;
-			try {
-				fileStatus = fs.statSync(fsPath);
-			} catch (error) {
-				return [];
-			}
-
-			if (fileStatus.isDirectory()) {
-				return _getFiles(fsPath);
-			}
-
-			if (!fileStatus.isFile()) { return []; }
-
-			const mime = getMimeType(fsPath);
-
-			if (typeof mime === "string" && useMimeTypeRegex().test(`${mime}`)) {
-				if (!this.view) { throw new EvalError(`View not available`); }
-
-				const uri = getResourceUri(fsPath), webviewUri = this.view.webview.asWebviewUri;
-
-				if (!webviewUri) { throw new ReferenceError(`Could not get asWebviewUri`); }
-
-				let item: MediaItem | undefined;
-				let placeholderUri: vscode.Uri | undefined;
-
-				let itemType;
-
-				switch (MediaTypeUtil.typeFromMime(mime)) {
-					case MediaType.image:
-						itemType = ImageItem;
-						break;
-					case MediaType.audio:
-						itemType = AudioItem;
-						placeholderUri = getUri(this.view.webview, this._extensionUri, [useContentPath(), "sound.svg"]);
-						break;
-					case MediaType.video:
-						itemType = VideoItem;
-						break;
-					default:
-						itemType = MiscMediaItem;
-						break;
-				}
-
-				if (item === undefined) {
-					item = new itemType(uri, (uri) => {
-						return this.webviewUriConveter(uri);
-					}, placeholderUri, (item) => this.onMediaUpdated(item));
-				}
-
-				return [item];
-			}
-
+	private async findMedia(): Promise<MediaItem[]> {
+		const webview = this.webview;
+		if (!webview) {
 			return [];
-		};
+		}
 
-		const _getFiles = (fsPath: string): MediaItem[] => {
-			const content = fs.readdirSync(fsPath);
+		const files = await getFilesInWorkspace({
+			excluding: COMMON_EXCLUDE_GLOBS
+		});
 
-			return content.reduce((p: MediaItem[], c: string): MediaItem[] => {
-				return [
-					...p,
-					...(_concat(path.join(fsPath, c))),
-				];
-			}, []);
-		};
+		return files.reduce((p: MediaItem[], uri) => {
+			const item = getMediaItem(uri,
+				webview,
+				this._extensionUri,
+				(item) => this.onMediaUpdated(item));
 
-		return _getFiles(workspacePath);
+			if (!item) { return p; }
+
+			return [
+				...p,
+				item,
+			];
+		}, []);
 	}
 
 	private listMedia({
@@ -311,7 +251,7 @@ export class MediaBrowserViewProvider implements vscode.WebviewViewProvider {
 			}, []);
 		}
 
-		this.view?.webview.postMessage({
+		this.webview?.postMessage({
 			type,
 			media,
 			options: {
